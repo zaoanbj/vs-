@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .active {
+            background: #ccc;
+        }
+
+        .message-box {
+            padding: 10px20px;
+            background: #4fc08d;
+            border: 1pxsolid#42b983;
+        }
+
+        .message-box-close {
+            float: right;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <message :show.sync="show">
+            <template v-slot:title="slotProps"><h2>{{slotProps.title}}</h2></template>
+            <template v-slot:default>新增信息成功！</template>
+        </message>
+        <h2 :title="title">{{title}}</h2>
+        <course-add v-model="course" @add-course="addCourse"></course-add>
+        <course-list :courses="courses"></course-list>
+        <p>
+            总数: {{totalCount}}
+        </p>
+    </div>
+    <script src="vue.js"></script>
+    <script>
+        Vue.component('message', {
+            props: ['show'],
+            template:`
+                <div class="message-box" v-if="show">
+                    <slot name="title" title="aaa"></slot>
+                    <slot></slot>
+                    <span class="message-box-close" @click="$emit('update:show', false)">X</span>
+                </div>
+            `
+        })
+
+        function getCourses() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve(['aa', 'bb', 'cc'])
+                })
+            })
+        }
+
+        Vue.component('course-add', {
+            props: ['value'],
+            template: `
+            <div>
+                <input type="text" :value="value" @input="onInput" v-on:keydown.enter="addCourse">
+                <button @click="addCourse">新增</button>
+            </div>
+            `,
+            methods: {
+                addCourse() {
+                    this.$emit('add-course')
+                },
+                onInput(e) {
+                    this.$emit('input', e.target.value)
+                }
+            }
+        })
+
+        Vue.component('course-list', {
+            data() {
+                return {
+                    selectCourse: 0,
+                }
+            },
+            props: {
+                courses: {
+                    type: Array,
+                    default: ''
+                },
+            },
+            template: `
+                <div>
+                    <p v-if="courses.length==0">没有信息</p>
+                    <ul class="course-list" v-else>
+                        <!-- <li v-for="c in courses" :class={active: (selectCourse === c)}" @click="selectCourse = c">{{ c }}</li> -->
+                        <li v-for="c in courses" :style="{backgroundColor:(selectCourse===c)?'#ddd':''}" @click="selectCourse = c">{{ c }}</li>
+                    </ul>
+                </div>`
+        })
+
+        const app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    title: "hello vue",
+                    course: '',
+                    courses: [],
+                    totalCount: 0,
+                    show: false
+                }
+            },
+            components: {
+                //courseList
+            },
+            async created() {
+                const Courses = await getCourses();
+                console.log(Courses);
+                this.courses = Courses;
+            },
+            mounted() { },
+            methods: {
+                addCourse() {
+                    this.courses.push(this.course)
+                    this.course = ''
+                    this.show = true
+                }
+            },
+            computed: {
+                total() {
+                    return this.courses.length
+                }
+            },
+            /* watch: {
+                courses(newValue, oldValue) {
+                    this.totalCount = newValue.length
+                }
+            }, */
+            watch: {
+                courses: {
+                    immediate: true,
+                    handler(newValue, oldValue) {
+                        this.totalCount = newValue.length
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
